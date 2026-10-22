@@ -1,0 +1,80 @@
+PHOTO-MODEL PATCH FOR attention_core.py
+========================================
+
+1. Open attention_core.py.
+2. Find the method inside class Student named:
+       def model_status(self, clf, now):
+3. Replace that entire method with the code below.
+4. Save the file.
+
+This keeps support for your old temporal model too. If the loaded model uses
+the four image features (ear, pitch, yaw, roll), it predicts from the current
+frame. Otherwise it uses your existing 3-second window features.
+
+    def model_status(self, clf, now):
+        """Predict using either a photo model or the existing temporal model."""
+        cols = list(getattr(clf, "feature_names_in_", []))
+
+        # Photo model: one row of features from the current frame.
+        image_cols = ["ear", "pitch", "yaw", "roll"]
+        if cols == image_cols:
+            if self.pose is not None:
+                values = {
+                    "ear": float(self.ear),
+                    "pitch": float(self.pose[0]),
+                    "yaw": float(self.pose[1]),
+                    "roll": float(self.pose[2]),
+                }
+                X = pd.DataFrame([values], columns=image_cols)
+                pred = str(clf.predict(X)[0]).lower()
+                self.model_label = (
+                    "Attentive" if pred.startswith("att") else "Inattentive"
+                )
+            return self.model_label
+
+        # Original video model: use a 3-second feature window.
+        if now - self.last_pred_t >= 0.5 and len(self.hist) >= 10:
+            arr = np.array(self.hist, dtype=np.float64)
+            arr = arr[arr[:, 0] >= now - WINDOW_S]
+            if len(arr) >= 10 and arr[-1, 0] - arr[0, 0] >= 2.0:
+                X = pd.DataFrame([window_features(arr)])
+                if cols:
+                    X = X[cols]
+                pred = str(clf.predict(X)[0]).lower()
+                self.model_label = (
+                    "Attentive" if pred.startswith("att") else "Inattentive"
+                )
+            self.last_pred_t = now
+        return self.model_label
+
+
+RUN STEPS
+=========
+
+1. In the project folder, create:
+       images/attentive/
+       images/inattentive/
+
+2. Put labelled photos in those folders. Start with clear photos and use many
+   different images and people/poses; do not put the same photo or near-identical
+   crops in both folders.
+
+3. Activate your existing virtual environment, then run:
+       python build_image_dataset.py
+       python train_image_model.py
+
+4. Start the app:
+       python attention_app.py
+
+5. In Settings, choose Trained model -> Load model... and select:
+       attention_image_rf.joblib
+
+Do NOT rename it to attention_rf.joblib unless you have backed up the old model.
+
+NOTES
+=====
+- Each image's folder label is applied to all faces detected in that image.
+- The feature model learns visible eye/head pose patterns, not a student's
+  actual mental state. Looking down to write notes may be misclassified.
+- A single image cannot show how long someone has had their eyes closed.
+- This model is a basic baseline, not a reliable measure of student attention.

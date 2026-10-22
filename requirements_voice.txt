@@ -1,0 +1,5 @@
+# Install this in a SEPARATE virtual environment (venv_voice), Python 3.10 or newer.
+# It is kept apart from the app's environment so the two sets of libraries
+# (MediaPipe and LiveKit) cannot conflict with each other.
+livekit-agents~=1.5
+python-dotenv
