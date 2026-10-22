@@ -14,6 +14,37 @@ Train your own model:
     3. python train_rf.py          -> attention_rf.joblib + metrics
     4. Restart the app, Settings tab -> choose "Trained model".
 
+RUN STEPS
+=========
+
+1. In the project folder, create:
+       images/attentive/
+       images/inattentive/
+
+2. Put labelled photos in those folders. Start with clear photos and use many
+   different images and people/poses; do not put the same photo or near-identical
+   crops in both folders.
+
+3. Activate your existing virtual environment, then run:
+       python build_image_dataset.py
+       python train_image_model.py
+
+4. Start the app:
+       python attention_app.py
+
+5. In Settings, choose Trained model -> Load model... and select:
+       attention_image_rf.joblib
+
+Do NOT rename it to attention_rf.joblib unless you have backed up the old model.
+
+NOTES
+=====
+- Each image's folder label is applied to all faces detected in that image.
+- The feature model learns visible eye/head pose patterns, not a student's
+  actual mental state. Looking down to write notes may be misclassified.
+- A single image cannot show how long someone has had their eyes closed.
+- This model is a basic baseline, not a reliable measure of student attention.
+
 Files:
     attention_core.py   detection logic (face mesh, head pose, EAR, rules, model)
     attention_app.py    desktop interface (run this)
